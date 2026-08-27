@@ -82,21 +82,27 @@ compromised. No storage change fixes that - it has to be rotated.
 helper reads from the NSP store and warns-and-falls-back to the legacy **OneDrive-synced**
 `APIStuff\` plaintext file during migration.
 
-| Legacy file | Secret name | Status |
+| Legacy file | Secret name | Notes |
 |---|---|---|
-| `AT_Seed.txt` | `CW.Automate.TotpSeed` | wired - **plaintext TOTP seed in OneDrive, migrate first** |
-| `ClientID.txt` | `CW.Automate.ClientId` | wired |
-| `AT_User.txt` | `CW.Automate.User` | not wired (low sensitivity); do for consistency |
-| `AT_Pass.txt` | `CW.Automate.Password` | not wired (already DPAPI-encrypted); do for consistency |
+| `AT_Seed.txt` | `CW.Automate.TotpSeed` | **plaintext base32 TOTP seed in OneDrive - migrate first** |
+| `ClientID.txt` | `CW.Automate.ClientId` | API client id |
+| `AT_User.txt` | `CW.Automate.User` | API username (plaintext) |
+| `AT_Pass.txt` | `CW.Automate.Password` | already DPAPI-encrypted; `Get-ATSecret -AsSecureString` reads the legacy file as a DPAPI blob, or the vault as a SecureString |
+
+All four are wired via the `Get-ATSecret` helper in `Connect-NSP-ATControl.ps1` (warn +
+fall back to the legacy file until the secret is stored).
 
 ```powershell
 Import-Module 'C:\GitRepo\NSP-Bootstrap\NSP.Bootstrap.psd1'
 Set-NSPSecret -Name 'CW.Automate.TotpSeed'     # paste the base32 seed
 Set-NSPSecret -Name 'CW.Automate.ClientId'     # paste the API client id
-Get-NSPSecret -Name 'CW.Automate.TotpSeed' -AsPlainText   # verify
+Set-NSPSecret -Name 'CW.Automate.User'         # paste the API username
+Set-NSPSecret -Name 'CW.Automate.Password'     # paste the password (stored as a SecureString)
+Get-NSPSecret -Name 'CW.Automate.TotpSeed' -AsPlainText   # spot-check
 ```
 
-Then delete the two legacy files from the OneDrive `APIStuff\` folder (the runtime `BaseDir` in
+Then run `Connect-NSP-ATControl.ps1` once to confirm the Automate connect still works, and
+delete all four legacy files from the OneDrive `APIStuff\` folder (the runtime `BaseDir` in
 `Connect-NSP-ATControl.ps1`, not the repo copy).
 
 ---
