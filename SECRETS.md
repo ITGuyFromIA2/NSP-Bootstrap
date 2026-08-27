@@ -76,23 +76,28 @@ compromised. No storage change fixes that - it has to be rotated.
 
 ---
 
-## Also migrate (same pattern, not yet wired)
+## CW Automate secrets (Connect-NSP-ATControl.ps1)
 
-`NSP-AutomateControl\Connect-NSP-ATControl.ps1` still reads plaintext from a **OneDrive-synced**
-`APIStuff\` folder:
+`NSP-AutomateControl\Connect-NSP-ATControl.ps1` is now wired the same way: a local `Get-ATSecret`
+helper reads from the NSP store and warns-and-falls-back to the legacy **OneDrive-synced**
+`APIStuff\` plaintext file during migration.
 
-| File | Secret name to use | Notes |
+| Legacy file | Secret name | Status |
 |---|---|---|
-| `AT_Seed.txt` | `CW.Automate.TotpSeed` | **plaintext TOTP seed in OneDrive** - highest priority after the Control key |
-| `ClientID.txt` | `CW.Automate.ClientId` | API client id |
-| `AT_User.txt` | `CW.Automate.User` | low sensitivity |
-| `AT_Pass.txt` | `CW.Automate.Password` | already DPAPI-encrypted; migrate for consistency |
+| `AT_Seed.txt` | `CW.Automate.TotpSeed` | wired - **plaintext TOTP seed in OneDrive, migrate first** |
+| `ClientID.txt` | `CW.Automate.ClientId` | wired |
+| `AT_User.txt` | `CW.Automate.User` | not wired (low sensitivity); do for consistency |
+| `AT_Pass.txt` | `CW.Automate.Password` | not wired (already DPAPI-encrypted); do for consistency |
 
 ```powershell
-Set-NSPSecret -Name 'CW.Automate.TotpSeed'
-Set-NSPSecret -Name 'CW.Automate.ClientId'
-# then replace the Get-Content calls in Connect-NSP-ATControl.ps1 with Get-NSPSecret
+Import-Module 'C:\GitRepo\NSP-Bootstrap\NSP.Bootstrap.psd1'
+Set-NSPSecret -Name 'CW.Automate.TotpSeed'     # paste the base32 seed
+Set-NSPSecret -Name 'CW.Automate.ClientId'     # paste the API client id
+Get-NSPSecret -Name 'CW.Automate.TotpSeed' -AsPlainText   # verify
 ```
+
+Then delete the two legacy files from the OneDrive `APIStuff\` folder (the runtime `BaseDir` in
+`Connect-NSP-ATControl.ps1`, not the repo copy).
 
 ---
 
