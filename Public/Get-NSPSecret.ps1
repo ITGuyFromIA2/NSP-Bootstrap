@@ -57,7 +57,8 @@ function Get-NSPSecret {
             Write-Verbose "Get-NSPSecret: SecretManagement present but failed to import ($_)."
         }
         $vaultPresent = $false
-        try { $vaultPresent = [bool](Get-SecretVault -Name $Vault -ErrorAction SilentlyContinue) } catch { }
+        try   { $vaultPresent = [bool](Get-SecretVault -Name $Vault -ErrorAction SilentlyContinue) }
+        catch { $vaultPresent = $false }
 
         if ($vaultPresent -and (Get-SecretInfo -Name $Name -Vault $Vault -ErrorAction SilentlyContinue)) {
             Write-Verbose "Get-NSPSecret: '$Name' resolved from vault '$Vault'."

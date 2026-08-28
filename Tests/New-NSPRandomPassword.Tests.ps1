@@ -24,12 +24,16 @@ Describe 'New-NSPRandomPassword' {
 
     It 'never emits quote, backtick, or space (CLI-safe)' {
         $pw = -join (1..50 | ForEach-Object { New-NSPRandomPassword -Length 32 })
-        $pw | Should -Not -Match "[`"' `` ]"
+        # -MatchExactly: -Match is case-insensitive, which would also reject the legitimate
+        # lower-case letters here.
+        $pw | Should -Not -MatchExactly "[`"' `` ]"
     }
 
-    It 'excludes look-alike characters 0 O 1 l I' {
+    It 'excludes look-alike characters 0 O 1 l I (keeps lower-case i and o)' {
         $pw = -join (1..50 | ForEach-Object { New-NSPRandomPassword -Length 32 })
-        $pw | Should -Not -Match '[0O1lI]'
+        # Case-sensitive: the charset drops digit 0 / upper O, and digit 1 / lower l / upper I,
+        # but deliberately keeps lower-case i and o.
+        $pw | Should -Not -MatchExactly '[0O1lI]'
     }
 
     It 'produces a different value each call' {
