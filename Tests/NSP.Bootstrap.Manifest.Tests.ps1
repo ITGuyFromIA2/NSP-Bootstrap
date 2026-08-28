@@ -5,10 +5,14 @@
     Run:  Invoke-Pester -Path .\Tests
 #>
 
+# Runs during BOTH Pester discovery and run. Discovery needs the module imported so the
+# -ForEach data below (exported command names) is populated; BeforeAll re-imports for the run.
+$script:ManifestPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'NSP.Bootstrap.psd1'
+Import-Module $script:ManifestPath -Force -ErrorAction Stop
+
 BeforeAll {
-    $script:ModuleRoot = Split-Path -Parent $PSScriptRoot
-    $script:ManifestPath = Join-Path $ModuleRoot 'NSP.Bootstrap.psd1'
-    Import-Module $ManifestPath -Force -ErrorAction Stop
+    $script:ManifestPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'NSP.Bootstrap.psd1'
+    Import-Module $script:ManifestPath -Force -ErrorAction Stop
 }
 
 AfterAll {

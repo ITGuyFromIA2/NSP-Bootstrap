@@ -37,12 +37,15 @@ $needPester   = -not (Test-Dep -Name 'Pester'           -Min ([version]'5.5.0'))
 if ($needAnalyzer -or $needPester) {
     if ($InstallDeps) {
         if ($needAnalyzer) { Install-NSPModule -Name PSScriptAnalyzer -MinimumVersion 1.21.0 -Verbose }
-        if ($needPester)   { Install-NSPModule -Name Pester -MinimumVersion 5.5.0 -Verbose }
+        # -SkipPublisherCheck: the in-box Pester 3.4.0 is Microsoft-signed; the gallery build is
+        # signed by a different publisher, so a side-by-side install is blocked without this.
+        if ($needPester)   { Install-NSPModule -Name Pester -MinimumVersion 5.5.0 -SkipPublisherCheck -Verbose }
     } else {
         Write-Host ""
         Write-Host "Missing test dependencies. Install them with:" -ForegroundColor Yellow
         Write-Host "  Import-Module '$repoRoot\NSP.Bootstrap.psd1'" -ForegroundColor Yellow
-        Write-Host "  Install-NSPModule -Name PSScriptAnalyzer,Pester -MinimumVersion 5.5.0" -ForegroundColor Yellow
+        Write-Host "  Install-NSPModule -Name PSScriptAnalyzer -MinimumVersion 1.21.0" -ForegroundColor Yellow
+        Write-Host "  Install-NSPModule -Name Pester -MinimumVersion 5.5.0 -SkipPublisherCheck" -ForegroundColor Yellow
         Write-Host "or re-run:  .\tools\Test-Repo.ps1 -InstallDeps" -ForegroundColor Yellow
         exit 2
     }

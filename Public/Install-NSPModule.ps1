@@ -25,18 +25,24 @@ function Install-NSPModule {
     .PARAMETER Force
         Reinstall even if a satisfying version is already present.
 
+    .PARAMETER SkipPublisherCheck
+        Pass through to Install-Module. Needed when upgrading a module that shipped in-box under a
+        Microsoft signature to a gallery build signed by a different publisher - the classic case
+        is Pester 3.4.0 (in-box) -> Pester 5/6.
+
     .EXAMPLE
         Install-NSPModule -Name Microsoft.PowerShell.SecretManagement, Microsoft.PowerShell.SecretStore
 
     .EXAMPLE
-        Install-NSPModule -Name Pester -MinimumVersion 5.5.0
+        Install-NSPModule -Name Pester -MinimumVersion 5.5.0 -SkipPublisherCheck
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory, Position = 0)][string[]]$Name,
         [string]$MinimumVersion,
         [ValidateSet('CurrentUser', 'AllUsers')][string]$Scope = 'CurrentUser',
-        [switch]$Force
+        [switch]$Force,
+        [switch]$SkipPublisherCheck
     )
 
     try {
@@ -71,7 +77,8 @@ function Install-NSPModule {
             AllowClobber = $true
             ErrorAction  = 'Stop'
         }
-        if ($MinimumVersion) { $installParams.MinimumVersion = $MinimumVersion }
+        if ($MinimumVersion)     { $installParams.MinimumVersion     = $MinimumVersion }
+        if ($SkipPublisherCheck) { $installParams.SkipPublisherCheck = $true }
 
         if ($PSCmdlet.ShouldProcess($moduleName, "Install-Module (scope $Scope)")) {
             Write-Verbose "Install-NSPModule: installing '$moduleName'..."
