@@ -108,6 +108,29 @@ Then run `Start-NSPControlMenu.ps1` (option 1) to confirm the Automate connect s
 
 ---
 
+## Runbook: publishing a module to the PowerShell Gallery
+
+1. **Get an API key.** powershellgallery.com -> sign in -> Account Settings -> API Keys ->
+   Create. Scope it: a glob like `NSP.*` (not "all packages") and a real expiration date, not
+   "never" - a key that only signs for the packages you actually intend to publish is one less
+   thing that matters if it ever leaks.
+
+2. **Store it:**
+   ```powershell
+   Import-Module 'C:\GitRepo\NSP-Bootstrap\NSP.Bootstrap.psd1'
+   Set-NSPSecret -Name 'MS.PSGallery.ApiKey'
+   ```
+
+3. **Publish:**
+   ```powershell
+   Publish-Module -Path 'C:\GitRepo\NSP-Bootstrap' -NuGetApiKey (Get-NSPSecret -Name 'MS.PSGallery.ApiKey' -AsPlainText)
+   ```
+
+4. **Versions are immutable once published** - `1.0.0` can never be overwritten, only
+   superseded. Bump `ModuleVersion` in the manifest before every publish, even a doc-only fix.
+
+---
+
 ## Medium term: Azure Key Vault
 
 For "one store, N techs, M client keys, rotation in one place, every read audited":
