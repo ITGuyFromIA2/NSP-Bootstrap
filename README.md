@@ -13,11 +13,16 @@ one.
 | `Get-NSPSecret` | Single retrieval call site. Resolution order: env var `NSP_SECRET_<NAME>` -> `NSP` vault -> DPAPI fallback file. Returns SecureString, or `-AsPlainText`. |
 | `Set-NSPSecret` | Store/replace a secret. Prompts (no echo) if no value passed. `-Scope File` for the DPAPI fallback. |
 | `Remove-NSPSecret` | Delete from vault, file, or both. |
+| `Get-NSPSecretInfo` | Lists secret names + where they're stored (vault/file/environment) - never values. |
+| `Test-NSPSecretStore` | Diagnostics: is SecretManagement/SecretStore installed, is the vault registered and actually reachable right now, how many DPAPI fallback entries exist. |
 | `New-NSPRandomPassword` | Cross-5.1/7 crypto-random password (adopted from NSP-FGTIPSecTools). CLI-safe charset, no look-alikes. |
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Install (dev / on a workstation)
 
-Not published to a gallery. Put it on the module path so `Import-Module NSP.Bootstrap` works:
+Not yet published to the PowerShell Gallery. Put it on the module path so `Import-Module
+NSP.Bootstrap` works:
 
 ```powershell
 # option A: symlink into the user module folder (admin, one time)
@@ -46,10 +51,11 @@ Get-NSPSecret -Name 'CW.Control.ApiKey' -AsPlainText
 ## Tests
 
 ```powershell
-.\tools\Test-Repo.ps1            # PSScriptAnalyzer + Pester 5; prints install hint if deps missing
+.\tools\Test-Repo.ps1            # PSScriptAnalyzer + Pester 5+; prints install hint if deps missing
 .\tools\Test-Repo.ps1 -InstallDeps
 ```
 
-Module tests are Pester 5. The shared AST-extraction harness for testing functions embedded in
-big side-effecting scripts lives in [`Tests/Shared/TestAssertions.ps1`](Tests/Shared/README.md)
-- canonical copy, other repos reference it.
+Module tests are Pester 5+ (`Describe`/`It`/`Should -Be`). The shared AST-extraction harness for
+testing functions embedded in big side-effecting scripts lives in
+[`Tests/Shared/TestAssertions.ps1`](Tests/Shared/README.md) - canonical copy, other repos
+reference it.

@@ -1,6 +1,6 @@
 @{
     RootModule        = 'NSP.Bootstrap.psm1'
-    ModuleVersion     = '0.1.0'
+    ModuleVersion     = '1.0.0'
     GUID              = '40ee65bf-0574-4797-8b4e-14230354b10b'
     Author            = 'Network Systems Plus'
     CompanyName       = 'Network Systems Plus'
@@ -18,6 +18,8 @@
         'Get-NSPSecret'
         'Set-NSPSecret'
         'Remove-NSPSecret'
+        'Get-NSPSecretInfo'
+        'Test-NSPSecretStore'
         'New-NSPRandomPassword'
     )
     CmdletsToExport   = @()
@@ -26,8 +28,10 @@
 
     PrivateData = @{
         PSData = @{
-            Tags       = @('NSP', 'Bootstrap', 'Secret', 'SecretManagement')
-            ProjectUri = 'https://github.com/ITGuyFromIA2/NSP-Bootstrap'
+            Tags         = @('NSP', 'Bootstrap', 'Secret', 'SecretManagement', 'CredentialStore')
+            ProjectUri   = 'https://github.com/ITGuyFromIA2/NSP-Bootstrap'
+            LicenseUri   = 'https://github.com/ITGuyFromIA2/NSP-Bootstrap/blob/main/LICENSE'
+            ReleaseNotes = 'https://github.com/ITGuyFromIA2/NSP-Bootstrap/blob/main/CHANGELOG.md'
         }
     }
 }
