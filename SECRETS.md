@@ -126,8 +126,9 @@ Then run `Start-NSPControlMenu.ps1` (option 1) to confirm the Automate connect s
    Publish-Module -Path 'C:\GitRepo\NSP-Bootstrap' -NuGetApiKey (Get-NSPSecret -Name 'MS.PSGallery.ApiKey' -AsPlainText)
    ```
 
-4. **Versions are immutable once published** - `1.0.0` can never be overwritten, only
-   superseded. Bump `ModuleVersion` in the manifest before every publish, even a doc-only fix.
+4. **Versions are immutable once published** - once `0.1.0` is out, it can never be
+   overwritten, only superseded. Bump `ModuleVersion` in the manifest before every publish, even
+   a doc-only fix.
 
 ---
 
