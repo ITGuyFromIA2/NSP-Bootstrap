@@ -40,12 +40,26 @@ challenge - fine for an interactive tech laptop. For a shared server or a servic
 
 ## Runbook: the ScreenConnect / CW Control API key
 
-The key `067b74f3-...` is in **PoSHRepo git history** (3 files, pushed to GitHub). It is
-compromised. No storage change fixes that - it has to be rotated.
+Original incident (resolved): the key `067b74f3-...` was in **PoSHRepo git history** (3 files,
+pushed to GitHub), compromised. Rotated, scrubbed from history (`git filter-repo`), and
+`NSP-AutomateControl` now reads it exclusively through `Get-NSPSecret` with no plaintext-file
+fallback. Kept below as the repeatable rotation procedure for next time.
 
-1. **Rotate it in Control.** ScreenConnect Control -> Admin -> Security / API, regenerate the
-   API key (or the API user's key). Invalidate the old value. Everything below stores the
-   **new** key.
+1. **Regenerate it in Control** - the actual path, not "Security / API" (that menu doesn't
+   exist in Control; confirmed live 2026-09):
+
+   **Prerequisite:** the "RESTful API Manager" extension isn't installed by default - if it's
+   not already in your Extensions list, install it first (Admin -> Extensions -> add/browse
+   extensions). The Edit Settings screen below doesn't exist until it's installed.
+
+   **Admin -> Extensions -> "RESTful API Manager" -> the `...` menu on that row -> Edit
+   Settings**, then on `RESTfulAuthenticationSecret`: select **Custom**, generate a new long
+   random string (or GUID) as the value, **Save Settings**. Same screen also has
+   `RESTfulUserName` (cosmetic - the name attached to events this API creates) and
+   `RESTfulAllowedOrigin` (optional Origin-header allowlist) - leave both alone for a routine
+   rotation.
+
+   The old value stops working the moment you save. Everything below stores the **new** one.
 
 2. **Store the new key:**
    ```powershell
@@ -59,38 +73,27 @@ compromised. No storage change fixes that - it has to be rotated.
    Get-NSPSecret -Name 'CW.Control.ApiKey' -AsPlainText
    ```
 
-4. **`NSP-AutomateControl` already reads from here.** `Rework-RestfulAPI_Functional.ps1` now
-   does `Get-NSPSecret -Name 'CW.Control.ApiKey'` and only falls back to the old
-   `APIStuff\CL_CTRLAuthHeader.txt` (with a warning) if the secret store has nothing.
-
-5. **Once step 3 works, delete the plaintext file:**
-   ```powershell
-   Remove-Item 'C:\GitRepo\NSP-AutomateControl\APIStuff\CL_CTRLAuthHeader.txt'
-   ```
-   (It is gitignored, so it was never committed in *that* repo - but it is a live plaintext
-   key on disk and in OneDrive sync. Remove it.)
-
-6. **Optional history scrub of PoSHRepo.** Rotating in step 1 is the real fix. If you also want
-   the string gone from history: `git filter-repo --replace-text` on a fresh clone, force-push,
-   everyone re-clones. Disruptive; schedule it, don't rush it.
+4. **`NSP-AutomateControl` reads it straight from here, no fallback.**
+   `ControlRestApi.ps1` calls `Get-NSPSecret -Name 'CW.Control.ApiKey' -AsPlainText`
+   unconditionally - if the store doesn't have it, the script throws immediately with a
+   `Set-NSPSecret` pointer rather than limping along on a stale value.
 
 ---
 
-## CW Automate secrets (Connect-NSP-ATControl.ps1)
+## CW Automate secrets (Connect-AutomateControl.ps1)
 
-`NSP-AutomateControl\Connect-NSP-ATControl.ps1` is now wired the same way: a local `Get-ATSecret`
-helper reads from the NSP store and warns-and-falls-back to the legacy **OneDrive-synced**
-`APIStuff\` plaintext file during migration.
+`NSP-AutomateControl\Connect-AutomateControl.ps1` reads every Automate credential straight
+through `Get-NSPSecret`, no fallback - same as the Control key above. The original migration
+bridge (`Get-ATSecret`, a legacy-OneDrive-file fallback) was removed once the migration was
+actually done; carrying forward unused fallback complexity was pointless once nothing exercised
+it. If any of these four aren't set yet, `ConnectAPIServers` throws immediately naming which one.
 
-| Legacy file | Secret name | Notes |
-|---|---|---|
-| `AT_Seed.txt` | `CW.Automate.TotpSeed` | **plaintext base32 TOTP seed in OneDrive - migrate first** |
-| `ClientID.txt` | `CW.Automate.ClientId` | API client id |
-| `AT_User.txt` | `CW.Automate.User` | API username (plaintext) |
-| `AT_Pass.txt` | `CW.Automate.Password` | already DPAPI-encrypted; `Get-ATSecret -AsSecureString` reads the legacy file as a DPAPI blob, or the vault as a SecureString |
-
-All four are wired via the `Get-ATSecret` helper in `Connect-NSP-ATControl.ps1` (warn +
-fall back to the legacy file until the secret is stored).
+| Secret name | What |
+|---|---|
+| `CW.Automate.TotpSeed` | base32 MFA seed |
+| `CW.Automate.ClientId` | Automate API client id |
+| `CW.Automate.User` | Automate API username |
+| `CW.Automate.Password` | Automate API password (stored as a SecureString) |
 
 ```powershell
 Import-Module 'C:\GitRepo\NSP-Bootstrap\NSP.Bootstrap.psd1'
@@ -98,12 +101,10 @@ Set-NSPSecret -Name 'CW.Automate.TotpSeed'     # paste the base32 seed
 Set-NSPSecret -Name 'CW.Automate.ClientId'     # paste the API client id
 Set-NSPSecret -Name 'CW.Automate.User'         # paste the API username
 Set-NSPSecret -Name 'CW.Automate.Password'     # paste the password (stored as a SecureString)
-Get-NSPSecret -Name 'CW.Automate.TotpSeed' -AsPlainText   # spot-check
+Get-NSPSecretInfo -Name 'CW.Automate.*'        # confirm all four are present (names only)
 ```
 
-Then run `Connect-NSP-ATControl.ps1` once to confirm the Automate connect still works, and
-delete all four legacy files from the OneDrive `APIStuff\` folder (the runtime `BaseDir` in
-`Connect-NSP-ATControl.ps1`, not the repo copy).
+Then run `Start-NSPControlMenu.ps1` (option 1) to confirm the Automate connect still works.
 
 ---
 
