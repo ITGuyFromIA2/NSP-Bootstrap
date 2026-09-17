@@ -123,8 +123,15 @@ Then run `Start-NSPControlMenu.ps1` (option 1) to confirm the Automate connect s
 
 3. **Publish:**
    ```powershell
-   Publish-Module -Path 'C:\GitRepo\NSP-Bootstrap' -NuGetApiKey (Get-NSPSecret -Name 'MS.PSGallery.ApiKey' -AsPlainText)
+   .\tools\Publish-ToGallery.ps1 -WhatIf    # stage + validate only, no network call
+   .\tools\Publish-ToGallery.ps1            # the real thing
    ```
+   Not a plain `Publish-Module -Path .` - `Publish-Module` requires the source folder's name to
+   exactly match the module name, and this repo's folder (`NSP-Bootstrap`, matching the GitHub
+   naming convention every NSP-* repo uses) doesn't match the module's actual identity
+   (`NSP.Bootstrap`, dot). `Publish-ToGallery.ps1` stages a correctly-named copy of the
+   user-facing files (not `Tests\`/`tools\`/dev-only files) in a temp directory and publishes
+   from there.
 
 4. **Versions are immutable once published** - once `0.1.0` is out, it can never be
    overwritten, only superseded. Bump `ModuleVersion` in the manifest before every publish, even
