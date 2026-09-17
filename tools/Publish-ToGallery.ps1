@@ -26,7 +26,7 @@
 
 .PARAMETER WhatIf
     Stage and validate (Test-ModuleManifest against the staged copy) but skip the actual
-    Publish-Module call.
+    publish call and the post-publish Find-Module verification.
 
 .EXAMPLE
     .\tools\Publish-ToGallery.ps1
@@ -81,19 +81,54 @@ try {
     $null = Test-ModuleManifest -Path (Join-Path $stageModuleDir "$moduleName.psd1") -ErrorAction Stop
     Write-Host "Staged manifest OK." -ForegroundColor DarkGray
 
-    if (-not (Get-Module -ListAvailable -Name PowerShellGet | Where-Object Version -ge '2.0')) {
-        Write-Warning "PowerShellGet 2.x+ not found - Publish-Module may be the old 1.0.0.1 in-box version. If this fails oddly, 'Install-NSPModule -Name PowerShellGet -MinimumVersion 2.2.5' first."
+    # Publish-Module's legacy in-box PowerShellGet (1.0.0.1, ships with Windows PowerShell 5.1)
+    # cannot publish at all anymore - PSGallery now requires NuGet client 4.1.0+, which 1.0.0.1
+    # doesn't speak, so the HTTP call gets rejected with a 400. CONFIRMED LIVE 2026-09: that
+    # failure surfaces as a non-terminating Write-Error buried in red text, and 1.0.0.1's
+    # Publish-Module then prints "Published X to Y" anyway regardless of whether it actually
+    # worked - the run looks like a success unless you're watching for the error. So: prefer the
+    # modern Microsoft.PowerShell.PSResourceGet (Publish-PSResource, no legacy NuGet-client-
+    # version problem) if it's installed; otherwise require PowerShellGet >= 2.2.5 and import
+    # that exact version explicitly (multiple versions can be side-by-side installed and
+    # auto-load does not reliably prefer the newer one, especially from a 32-bit vs 64-bit
+    # PowerShell 5.1 host with different default module search paths); hard-fail rather than
+    # warn if neither is available, since a warning already proved insufficient here.
+    $psResourceGet = Get-Module -ListAvailable -Name Microsoft.PowerShell.PSResourceGet -ErrorAction SilentlyContinue |
+        Sort-Object Version -Descending | Select-Object -First 1
+    $modernPSGet = Get-Module -ListAvailable -Name PowerShellGet -ErrorAction SilentlyContinue |
+        Where-Object { $_.Version -ge [version]'2.2.5' } | Sort-Object Version -Descending | Select-Object -First 1
+
+    if (-not $psResourceGet -and -not $modernPSGet) {
+        throw "No publish-capable module found (only the legacy in-box PowerShellGet 1.0.0.1, which PSGallery now rejects). Install one:`n  Install-NSPModule -Name Microsoft.PowerShell.PSResourceGet`n  -- or --`n  Install-NSPModule -Name PowerShellGet -MinimumVersion 2.2.5 -Force"
     }
 
-    if ($PSCmdlet.ShouldProcess("$moduleName $($manifest.ModuleVersion) -> $Repository", 'Publish-Module')) {
+    if ($PSCmdlet.ShouldProcess("$moduleName $($manifest.ModuleVersion) -> $Repository", 'Publish')) {
         # Only touches the secret store / network on a real (non -WhatIf) run.
         $NSPBootstrapManifest = 'C:\GitRepo\NSP-Bootstrap\NSP.Bootstrap.psd1'
         if (Test-Path $NSPBootstrapManifest) { Import-Module $NSPBootstrapManifest -Force -ErrorAction Stop }
         else { Import-Module NSP.Bootstrap -Force -ErrorAction Stop }
         $apiKey = Get-NSPSecret -Name $SecretName -AsPlainText
 
-        Publish-Module -Path $stageModuleDir -NuGetApiKey $apiKey -Repository $Repository
-        Write-Host "Published $moduleName $($manifest.ModuleVersion) to $Repository." -ForegroundColor Green
+        if ($psResourceGet) {
+            Import-Module Microsoft.PowerShell.PSResourceGet -RequiredVersion $psResourceGet.Version -Force -ErrorAction Stop
+            Write-Host "Publishing via Microsoft.PowerShell.PSResourceGet $($psResourceGet.Version)..." -ForegroundColor DarkGray
+            Publish-PSResource -Path $stageModuleDir -ApiKey $apiKey -Repository $Repository -ErrorAction Stop
+        } else {
+            Import-Module PowerShellGet -RequiredVersion $modernPSGet.Version -Force -ErrorAction Stop
+            Write-Host "Publishing via PowerShellGet $($modernPSGet.Version)..." -ForegroundColor DarkGray
+            Publish-Module -Path $stageModuleDir -NuGetApiKey $apiKey -Repository $Repository -ErrorAction Stop
+        }
+
+        # Trust but verify - Publish-Module has already been caught reporting success on a run
+        # that actually failed. Confirm the version is really there before calling it done.
+        Write-Host "Verifying..." -ForegroundColor DarkGray
+        Start-Sleep -Seconds 5
+        $found = Find-Module -Name $moduleName -RequiredVersion $manifest.ModuleVersion -Repository $Repository -ErrorAction SilentlyContinue
+        if ($found) {
+            Write-Host "Confirmed: $moduleName $($manifest.ModuleVersion) is live on $Repository." -ForegroundColor Green
+        } else {
+            Write-Warning "Publish-* reported success, but Find-Module can't see $moduleName $($manifest.ModuleVersion) on $Repository yet. This can be Gallery indexing lag (retry Find-Module in a minute or two) or a genuine failure - don't assume it worked without checking https://www.powershellgallery.com/packages/$moduleName."
+        }
     }
 } finally {
     # Real cleanup even under -WhatIf, for the same reason staging above forces -WhatIf:$false -
