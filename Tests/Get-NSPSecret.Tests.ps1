@@ -70,3 +70,41 @@ Describe 'Get-NSPSecret - not found' {
             Should -Throw -ExpectedMessage '*Set-NSPSecret*'
     }
 }
+
+Describe 'Get-NSPSecret -Source' {
+
+    AfterEach { Remove-Item "Env:\$EnvVar" -ErrorAction SilentlyContinue }
+
+    It '-Source EnvironmentVariable resolves from the env var' {
+        Set-Item "Env:\$EnvVar" -Value 'env-value-123'
+        Get-NSPSecret -Name $TestName -Source EnvironmentVariable -AsPlainText | Should -Be 'env-value-123'
+    }
+
+    It '-Source EnvironmentVariable throws (not falls through to the file) when the env var is unset' {
+        $secure = ConvertTo-SecureString -String 'file-value-xyz' -AsPlainText -Force
+        Set-NSPSecret -Name $TestName -Secret $secure -Scope File
+        try {
+            { Get-NSPSecret -Name $TestName -Source EnvironmentVariable -ErrorAction Stop } |
+                Should -Throw -ExpectedMessage "*EnvironmentVariable*"
+        } finally {
+            Remove-NSPSecret -Name $TestName -Scope File -ErrorAction SilentlyContinue
+        }
+    }
+
+    It '-Source File resolves from the DPAPI file even when an env var is also set' {
+        $secure = ConvertTo-SecureString -String 'file-value-xyz' -AsPlainText -Force
+        Set-NSPSecret -Name $TestName -Secret $secure -Scope File
+        Set-Item "Env:\$EnvVar" -Value 'env-would-otherwise-win'
+        try {
+            Get-NSPSecret -Name $TestName -Source File -AsPlainText | Should -Be 'file-value-xyz'
+        } finally {
+            Remove-NSPSecret -Name $TestName -Scope File -ErrorAction SilentlyContinue
+        }
+    }
+
+    It '-Source File throws (not falls through to env) when no file exists' {
+        Set-Item "Env:\$EnvVar" -Value 'env-would-otherwise-win'
+        { Get-NSPSecret -Name $TestName -Source File -ErrorAction Stop } |
+            Should -Throw -ExpectedMessage "*File*"
+    }
+}

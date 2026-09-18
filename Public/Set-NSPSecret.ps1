@@ -8,20 +8,28 @@ function Set-NSPSecret {
         writes the DPAPI fallback file instead.
 
         If -Secret is omitted the value is read with Read-Host -AsSecureString, so it never lands
-        in shell history, a script file, or a transcript. Prefer that.
+        in shell history, a script file, or a transcript. Prefer that interactively.
+
+        That prompt is the wrong default for CI or a scheduled script, though - it would hang
+        waiting on a console that isn't there. Pass -NonInteractive to turn a missing -Secret into
+        an immediate, clear throw instead of a prompt.
 
     .PARAMETER Name
         Secret name, e.g. 'CW.Control.ApiKey'.
 
     .PARAMETER Secret
-        The value: a [string], a [SecureString], or omitted (prompt). A plain string is accepted
-        for scripted migration but is the least safe path.
+        The value: a [string], a [SecureString], or omitted (prompt, unless -NonInteractive). A
+        plain string is accepted for scripted migration but is the least safe path.
 
     .PARAMETER Vault
         SecretManagement vault name. Defaults to 'NSP'.
 
     .PARAMETER Scope
         'Vault' (default) or 'File' (DPAPI fallback, current user + machine only).
+
+    .PARAMETER NonInteractive
+        Throw instead of prompting when -Secret is omitted. For CI/scheduled use, where a
+        Read-Host prompt would just hang.
 
     .EXAMPLE
         Set-NSPSecret -Name 'CW.Control.ApiKey'
@@ -30,6 +38,10 @@ function Set-NSPSecret {
     .EXAMPLE
         Set-NSPSecret -Name 'CW.Control.ApiKey' -Scope File
         # prompts, stores in %LOCALAPPDATA%\NSP\Secrets\CW.Control.ApiKey.sec
+
+    .EXAMPLE
+        Set-NSPSecret -Name 'CI.Deploy.Token' -Secret $token -NonInteractive
+        # scripted: fails fast if $token is somehow empty/unset, instead of hanging on a prompt
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '',
         Justification = 'Migration path: a plaintext value handed in by a tech or read from a legacy file must be converted to a SecureString to be stored securely.')]
@@ -38,10 +50,14 @@ function Set-NSPSecret {
         [Parameter(Mandatory, Position = 0)][string]$Name,
         [Parameter(Position = 1)][object]$Secret,
         [string]$Vault = $script:NSPVaultName,
-        [ValidateSet('Vault', 'File')][string]$Scope = 'Vault'
+        [ValidateSet('Vault', 'File')][string]$Scope = 'Vault',
+        [switch]$NonInteractive
     )
 
     if (-not $PSBoundParameters.ContainsKey('Secret') -or $null -eq $Secret) {
+        if ($NonInteractive) {
+            throw "Set-NSPSecret: -NonInteractive requires -Secret - no value was supplied for '$Name' and prompting is disabled."
+        }
         $secure = Read-Host -Prompt "Enter value for secret '$Name'" -AsSecureString
     } elseif ($Secret -is [System.Security.SecureString]) {
         $secure = $Secret
