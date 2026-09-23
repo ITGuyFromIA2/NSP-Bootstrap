@@ -6,7 +6,7 @@ had any use outside NSP yet - `0.x` says so honestly. `1.0.0` lands once that's 
 Once at `1.0.0`: breaking changes bump major, new functions/parameters bump minor, fixes bump
 patch.
 
-## 0.2.0
+## 0.1.2
 
 - `ConvertTo-NSPSubnetMask` - CIDR prefix length (0-32) -> dotted-decimal subnet mask. Adopted
   verbatim from NSP-FGTIPSecTools CLI Builder, the first consumer to take NSP.Bootstrap as a real
