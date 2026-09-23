@@ -17,6 +17,7 @@ one.
 | `Test-NSPSecretStore` | Diagnostics: is SecretManagement/SecretStore installed, is the vault registered and actually reachable right now, how many DPAPI fallback entries exist. |
 | `Test-NSPSecret` | Preflight for one specific secret: is it readable right now, which source would win, and why not if it can't - "vault is locked" vs "secret missing" vs "vault not registered" - without ever returning the value. Pipe several names through it to check a whole credential set at startup. |
 | `New-NSPRandomPassword` | Cross-5.1/7 crypto-random password (adopted from NSP-FGTIPSecTools). CLI-safe charset, no look-alikes. |
+| `ConvertTo-NSPSubnetMask` | CIDR prefix length (0-32) -> dotted-decimal subnet mask (adopted from NSP-FGTIPSecTools CLI Builder). |
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
