@@ -72,9 +72,28 @@ function Set-NSPSecret {
     if ($Scope -eq 'File') {
         $path = Get-NSPSecretFallbackPath -Name $Name
         $dir  = Split-Path -Parent $path
-        if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
         if ($PSCmdlet.ShouldProcess($path, 'Write DPAPI-encrypted secret file')) {
-            ConvertFrom-SecureString -SecureString $secure | Set-Content -LiteralPath $path -NoNewline -Encoding ascii
+            # Every step terminates on failure, and success is only reported after the stored value
+            # reads back and decrypts to what was given (security review FI-4: an access-denied
+            # write used to be followed by the green "Stored" line).
+            if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force -ErrorAction Stop | Out-Null }
+            $tmp = "$path.tmp"
+            try {
+                [IO.File]::WriteAllText($tmp, (ConvertFrom-SecureString -SecureString $secure), [Text.Encoding]::ASCII)
+                Move-Item -LiteralPath $tmp -Destination $path -Force -ErrorAction Stop
+            } finally {
+                if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }
+            }
+            $readBack = ConvertTo-SecureString -String ([IO.File]::ReadAllText($path).Trim()) -ErrorAction Stop
+            $expected = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+            $actual = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($readBack)
+            try {
+                $same = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($expected) -ceq [Runtime.InteropServices.Marshal]::PtrToStringBSTR($actual)
+            } finally {
+                [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($expected)
+                [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($actual)
+            }
+            if (-not $same) { throw "Set-NSPSecret: '$Name' was written to $path but does not read back as the value given - not stored." }
             Write-Host "Stored '$Name' at $path (DPAPI: current user + this machine only)." -ForegroundColor Green
         }
         return

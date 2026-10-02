@@ -6,6 +6,14 @@ had any use outside NSP yet - `0.x` says so honestly. `1.0.0` lands once that's 
 Once at `1.0.0`: breaking changes bump major, new functions/parameters bump minor, fixes bump
 patch.
 
+## 0.1.4
+
+- `Set-NSPSecret -Scope File` no longer reports success when the write fails. Folder creation and the
+  write terminate on error, the file is replaced atomically (temp file, then move), and "Stored" is
+  printed only after the file reads back and decrypts to the value given. Found by the 2026-10-02
+  security review: an access-denied write used to be followed by the green "Stored" line.
+- The loader dot-sources files in name order.
+
 ## 0.1.3
 
 - `Test-NSPIsAdmin` - true when the session is elevated. One call site for the WindowsPrincipal

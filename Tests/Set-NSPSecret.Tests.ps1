@@ -32,6 +32,23 @@ Describe 'Set-NSPSecret -Scope File' {
     It 'throws on an empty string rather than storing nothing' {
         { Set-NSPSecret -Name $TestName -Secret '' -Scope File -ErrorAction Stop } | Should -Throw
     }
+
+    It 'throws - and never says "Stored" - when the file cannot be written' {
+        # A FILE where the folder should be: creating the secrets folder fails (security review FI-4).
+        $blocker = Join-Path $TestDrive 'not-a-folder'
+        Set-Content -LiteralPath $blocker -Value 'x'
+        Mock -ModuleName NSP.Bootstrap Get-NSPSecretFallbackPath { Join-Path $blocker 'Secrets\x.sec' }
+        Mock -ModuleName NSP.Bootstrap Write-Host { }
+        { Set-NSPSecret -Name $TestName -Secret 'value' -Scope File } | Should -Throw
+        Should -Invoke -ModuleName NSP.Bootstrap Write-Host -Times 0 -ParameterFilter { "$Object" -match '^Stored' }
+    }
+
+    It 'writes nothing with -WhatIf' {
+        $target = Join-Path $TestDrive ('whatif_' + [guid]::NewGuid().ToString('N') + '\x.sec')
+        Mock -ModuleName NSP.Bootstrap Get-NSPSecretFallbackPath { $target }
+        Set-NSPSecret -Name $TestName -Secret 'value' -Scope File -WhatIf
+        Test-Path -LiteralPath (Split-Path -Parent $target) | Should -BeFalse
+    }
 }
 
 Describe 'Set-NSPSecret -NonInteractive' {
