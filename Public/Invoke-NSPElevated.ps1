@@ -19,6 +19,9 @@ function Invoke-NSPElevated {
         The relaunch uses the same PowerShell edition as the caller (powershell.exe from 5.1,
         pwsh.exe from 7+) unless -PowerShellPath overrides it.
 
+        When the environment variable NSP_NO_ELEVATE is '1' it never relaunches and returns $false,
+        so a launcher run with -NoElevate (or a test) keeps every tool it starts in the same session.
+
     .PARAMETER ScriptPath
         The .ps1 to relaunch elevated. Usually $PSCommandPath.
 
@@ -55,6 +58,10 @@ function Invoke-NSPElevated {
     )
 
     if (Test-NSPIsAdmin) { return $false }
+    if ($env:NSP_NO_ELEVATE -eq '1') {
+        Write-Verbose 'Invoke-NSPElevated: NSP_NO_ELEVATE=1 - staying in this session.'
+        return $false
+    }
 
     if (-not $PowerShellPath) {
         $PowerShellPath = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh.exe' } else { 'powershell.exe' }

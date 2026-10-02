@@ -57,6 +57,13 @@ Describe 'Invoke-NSPElevated' {
             }
         }
 
+        It 'never relaunches when NSP_NO_ELEVATE is 1' {
+            $env:NSP_NO_ELEVATE = '1'
+            try { Invoke-NSPElevated -Command 'x' | Should -BeFalse }
+            finally { Remove-Item Env:\NSP_NO_ELEVATE }
+            Should -Invoke -ModuleName NSP.Bootstrap Start-Process -Times 0 -Exactly
+        }
+
         It 'launches nothing under -WhatIf but still reports a relaunch' {
             Invoke-NSPElevated -Command 'x' -WhatIf | Should -BeTrue
             Should -Invoke -ModuleName NSP.Bootstrap Start-Process -Times 0 -Exactly

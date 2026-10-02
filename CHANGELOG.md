@@ -14,7 +14,9 @@ patch.
   `-EncodedCommand`) elevated, same PowerShell edition as the caller. Returns `$true` when it
   relaunched (caller exits), `$false` when already elevated (caller carries on). Lets
   module-hosted dashboards (NSP.ActiveDirectory, NSP.NPS, ...) self-elevate without a script path
-  to re-run. Absorbs the `NSP.Elevation` candidate from the PoSHRepo reorg.
+  to re-run. Absorbs the `NSP.Elevation` candidate from the PoSHRepo reorg. Setting the
+  environment variable `NSP_NO_ELEVATE=1` turns relaunching off for the session (a tool launcher
+  run with `-NoElevate`, tests).
 
 ## 0.1.2
 
