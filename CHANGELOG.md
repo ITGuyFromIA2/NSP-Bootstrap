@@ -6,6 +6,16 @@ had any use outside NSP yet - `0.x` says so honestly. `1.0.0` lands once that's 
 Once at `1.0.0`: breaking changes bump major, new functions/parameters bump minor, fixes bump
 patch.
 
+## 0.1.3
+
+- `Test-NSPIsAdmin` - true when the session is elevated. One call site for the WindowsPrincipal
+  check every self-elevating NSP script carried inline; `$false` (never throws) off Windows.
+- `Invoke-NSPElevated` - relaunch a script (`-ScriptPath`) or a command (`-Command`, passed via
+  `-EncodedCommand`) elevated, same PowerShell edition as the caller. Returns `$true` when it
+  relaunched (caller exits), `$false` when already elevated (caller carries on). Lets
+  module-hosted dashboards (NSP.ActiveDirectory, NSP.NPS, ...) self-elevate without a script path
+  to re-run. Absorbs the `NSP.Elevation` candidate from the PoSHRepo reorg.
+
 ## 0.1.2
 
 - `ConvertTo-NSPSubnetMask` - CIDR prefix length (0-32) -> dotted-decimal subnet mask. Adopted

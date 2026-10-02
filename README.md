@@ -18,6 +18,8 @@ one.
 | `Test-NSPSecret` | Preflight for one specific secret: is it readable right now, which source would win, and why not if it can't - "vault is locked" vs "secret missing" vs "vault not registered" - without ever returning the value. Pipe several names through it to check a whole credential set at startup. |
 | `New-NSPRandomPassword` | Cross-5.1/7 crypto-random password (adopted from NSP-FGTIPSecTools). CLI-safe charset, no look-alikes. |
 | `ConvertTo-NSPSubnetMask` | CIDR prefix length (0-32) -> dotted-decimal subnet mask (adopted from NSP-FGTIPSecTools CLI Builder). |
+| `Test-NSPIsAdmin` | True when the session is elevated (never throws; `$false` off Windows). |
+| `Invoke-NSPElevated` | Relaunch a script or a command elevated (UAC) in the same PowerShell edition; returns `$true` when it relaunched so the caller can exit. |
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 

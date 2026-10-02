@@ -1,6 +1,6 @@
 @{
     RootModule        = 'NSP.Bootstrap.psm1'
-    ModuleVersion     = '0.1.2'
+    ModuleVersion     = '0.1.3'
     GUID              = '40ee65bf-0574-4797-8b4e-14230354b10b'
     Author            = 'Network Systems Plus'
     CompanyName       = 'Network Systems Plus'
@@ -23,6 +23,8 @@
         'Test-NSPSecret'
         'New-NSPRandomPassword'
         'ConvertTo-NSPSubnetMask'
+        'Test-NSPIsAdmin'
+        'Invoke-NSPElevated'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
