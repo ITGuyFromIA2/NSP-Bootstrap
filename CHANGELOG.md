@@ -6,6 +6,10 @@ had any use outside NSP yet - `0.x` says so honestly. `1.0.0` lands once that's 
 Once at `1.0.0`: breaking changes bump major, new functions/parameters bump minor, fixes bump
 patch.
 
+## 0.1.6
+
+- Release routine: `tools\Publish-ToGallery.ps1` now runs `Publish-NSPModule` from NSP.RepoTools, the checks every NSP module shares (including a client-reference sweep of the Git history). No change to the module itself.
+
 ## 0.1.5
 
 - `Invoke-NSPPwsh` - relaunch a script (`-ScriptPath`) or a command (`-Command`) in PowerShell 7
