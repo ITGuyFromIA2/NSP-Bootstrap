@@ -64,19 +64,10 @@ function Invoke-NSPElevated {
     }
 
     if (-not $PowerShellPath) {
-        $PowerShellPath = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh.exe' } else { 'powershell.exe' }
+        $PowerShellPath = if ((Get-NSPPowerShellEdition) -eq 'Core') { 'pwsh.exe' } else { 'powershell.exe' }
     }
 
-    $psArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass')
-    if ($NoExit) { $psArgs += '-NoExit' }
-
-    if ($PSCmdlet.ParameterSetName -eq 'Script') {
-        $psArgs += @('-File', (ConvertTo-NSPQuotedArgument $ScriptPath))
-        foreach ($a in $ArgumentList) { $psArgs += (ConvertTo-NSPQuotedArgument $a) }
-    } else {
-        $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($Command))
-        $psArgs += @('-EncodedCommand', $encoded)
-    }
+    $psArgs = New-NSPRelaunchArgument -ScriptPath $ScriptPath -ArgumentList $ArgumentList -Command $Command -NoExit:$NoExit
 
     if ($PSCmdlet.ShouldProcess($PowerShellPath, "Relaunch elevated: $($psArgs -join ' ')")) {
         $startArgs = @{ FilePath = $PowerShellPath; ArgumentList = $psArgs; Verb = 'RunAs' }

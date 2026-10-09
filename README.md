@@ -20,6 +20,8 @@ one.
 | `ConvertTo-NSPSubnetMask` | CIDR prefix length (0-32) -> dotted-decimal subnet mask (adopted from NSP-FGTIPSecTools CLI Builder). |
 | `Test-NSPIsAdmin` | True when the session is elevated (never throws; `$false` off Windows). |
 | `Invoke-NSPElevated` | Relaunch a script or a command elevated (UAC) in the same PowerShell edition; returns `$true` when it relaunched so the caller can exit. |
+| `Invoke-NSPPwsh` | Relaunch a script or a command in PowerShell 7 when running in 5.1 (installing it first if needed); `-Elevated` also elevates. Returns `$true` when it relaunched. |
+| `Get-NSPPwshPath`, `Install-NSPPwsh` | Find PowerShell 7; install it machine-wide (winget, else the release MSI when elevated). |
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 

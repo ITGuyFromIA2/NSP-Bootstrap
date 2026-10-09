@@ -6,6 +6,19 @@ had any use outside NSP yet - `0.x` says so honestly. `1.0.0` lands once that's 
 Once at `1.0.0`: breaking changes bump major, new functions/parameters bump minor, fixes bump
 patch.
 
+## 0.1.5
+
+- `Invoke-NSPPwsh` - relaunch a script (`-ScriptPath`) or a command (`-Command`) in PowerShell 7
+  when running in Windows PowerShell 5.1, for tools that should not stay on 5.1 (Microsoft Graph
+  misbehaves there, and Microsoft is retiring 5.1 for Graph). `-Elevated` also makes sure the new
+  session is elevated (one UAC prompt; an elevated session stays elevated without another).
+  Returns `$true` when it relaunched, `$false` when already in PowerShell 7 (and elevated, if
+  asked). `NSP_NO_ELEVATE=1` keeps it in the session too. `Invoke-NSPElevated` is unchanged.
+- `Get-NSPPwshPath` - where pwsh.exe is (PATH, then the standard install folders), or `$null`.
+- `Install-NSPPwsh` - installs PowerShell 7 machine-wide when missing: winget (raises its own UAC
+  prompt), else the latest release MSI from GitHub when elevated, else a clear error. TLS 1.2 first.
+- `Invoke-NSPElevated` and `Invoke-NSPPwsh` build their relaunch arguments in one private helper.
+
 ## 0.1.4
 
 - `Set-NSPSecret -Scope File` no longer reports success when the write fails. Folder creation and the
