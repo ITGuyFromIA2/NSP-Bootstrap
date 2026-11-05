@@ -1,6 +1,6 @@
 @{
     RootModule        = 'NSP.Bootstrap.psm1'
-    ModuleVersion     = '0.1.6'
+    ModuleVersion     = '0.1.7'
     GUID              = '40ee65bf-0574-4797-8b4e-14230354b10b'
     Author            = 'Network Systems Plus'
     CompanyName       = 'Network Systems Plus'
@@ -14,6 +14,7 @@
 
     FunctionsToExport = @(
         'Install-NSPModule'
+        'Update-NSPModule'
         'Initialize-NSPSecretStore'
         'Get-NSPSecret'
         'Set-NSPSecret'

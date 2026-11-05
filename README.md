@@ -9,6 +9,7 @@ one.
 | Function | Purpose |
 |---|---|
 | `Install-NSPModule` | One function replacing the 6+ copies of the "trust gallery / Find-Module / Install-Module" block. TLS 1.2, CurrentUser scope, no permanent trust changes. |
+| `Update-NSPModule` | Update exact names or piped module objects from PSGallery; `-RemoveOld` cleans older versions after verifying the retained installation. |
 | `Initialize-NSPSecretStore` | One-time setup of the local `NSP` secret vault (SecretManagement + SecretStore). No-password current-user mode by default; `-RequirePassword` for shared/server hosts. |
 | `Get-NSPSecret` | Single retrieval call site. Resolution order: env var `NSP_SECRET_<NAME>` -> `NSP` vault -> DPAPI fallback file. Returns SecureString, or `-AsPlainText`. `-Source` pins resolution to exactly one of the three, throwing instead of falling through - for a sensitive scheduled job that must not pick up an ambient env-var override. |
 | `Set-NSPSecret` | Store/replace a secret. Prompts (no echo) if no value passed. `-Scope File` for the DPAPI fallback. `-NonInteractive` throws instead of prompting when no value was supplied - for CI/scheduled use. |
@@ -70,3 +71,34 @@ Module tests are Pester 5+ (`Describe`/`It`/`Should -Be`). The shared AST-extrac
 testing functions embedded in big side-effecting scripts lives in
 [`Tests/Shared/TestAssertions.ps1`](Tests/Shared/README.md) - canonical copy, other repos
 reference it.
+
+## Update and remove old versions
+
+```powershell
+# Preview updates and cleanup for the current user:
+Get-Module NSP.* -ListAvailable | Update-NSPModule -RemoveOld -WhatIf
+
+# Run elevated: update machine-wide and clean older copies in both machine-wide
+# and current-user module folders (Windows PowerShell and PowerShell 7):
+Get-Module NSP.* -ListAvailable | Update-NSPModule -Scope AllUsers -RemoveOld
+
+# Names and Get-InstalledModule objects also work:
+'NSP.Console', 'NSP.Bootstrap' | Update-NSPModule
+Get-InstalledModule NSP.* | Update-NSPModule -RemoveOld
+```
+
+Names are deduplicated per pipeline. The default scope is CurrentUser; AllUsers
+also cleans older copies in the current user's folders, never other users' profiles.
+If cleanup would remove the only copy in the other edition's folder within the selected
+scope, the retained Gallery version is saved there first. A failed or declined save
+prevents cleanup in that folder. An unpublished newer retained version cannot be
+replicated from the Gallery; cleanup stops safely.
+Cleanup is opt-in and follows verification of the latest stable Gallery version (or
+a newer version already installed in the selected scope). Equal and newer copies
+are preserved. Loaded copies are skipped with a warning; retry from a fresh session
+with only Bootstrap imported. Bootstrap itself stays loaded and cannot be purged
+while this command runs. Flat layouts, linked folders and nonstandard module paths
+are preserved. Exact-version consumers may still need an older copy: preview first.
+WhatIf reads local manifests and queries PSGallery but does not install or delete.
+This command uses PowerShellGet (Find-Module/Install-Module); it does not install
+test dependencies, change permanent Gallery trust, or import the updated modules.

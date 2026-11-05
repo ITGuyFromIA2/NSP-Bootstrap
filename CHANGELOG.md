@@ -6,6 +6,10 @@ had any use outside NSP yet - `0.x` says so honestly. `1.0.0` lands once that's 
 Once at `1.0.0`: breaking changes bump major, new functions/parameters bump minor, fixes bump
 patch.
 
+## 0.1.7
+
+- Add Update-NSPModule: piped names/module objects, deduplication, latest stable Gallery updates, and opt-in RemoveOld with WhatIf. AllUsers cleanup includes older current-user copies. Loaded, linked, flat and nonstandard copies are preserved.
+
 ## 0.1.6
 
 - Release routine: `tools\Publish-ToGallery.ps1` now runs `Publish-NSPModule` from NSP.RepoTools, the checks every NSP module shares (including a client-reference sweep of the Git history). No change to the module itself.
